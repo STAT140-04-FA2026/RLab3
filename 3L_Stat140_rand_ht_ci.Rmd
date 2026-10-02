@@ -1,0 +1,110 @@
+---
+title: 'R Lab: Hypothesis Testing with Randomization'
+author: "YOUR NAME HERE"
+date: "Fall 2026"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(ggplot2)
+library(openintro)
+```
+
+## Overview
+
+Today we are going to do some further investigations of the **randomization test** (also known as the **permutation test** for observational studies), but using a computer this time, instead of doing it by hand with paper and cups. We are going to look at the effect of doing the randomization test with a relatively small number of simulations (think 20-25, like we did in class) versus 100 or even more simulations. We will review hypotheses, discuss how to make our simulations reproducible, how to save the results, how to plot them, and how to calculate the associated *p-value*, the probability of getting a test statistic as extreme or more extreme than what we observe from our data just by pure random chance. 
+
+We will continue using data on the sex discrimination case (Section 11.1 in Introduction to Modern Statistics (2e)) for purposes of this lab. It is available in the openintro package and called sex_discrimination.
+
+```{r}
+head(sex_discrimination)
+```
+
+
+# Hypothesis testing and randomization test
+
+## Hypotheses
+
+$H_0:$ **Null hypothesis.** The variables sex and decision are independent. The difference in promotion rates of 29.2% was due to natural variability inherent in the population.
+
+$H_A:$ **Alternative hypothesis.** The variables sex and decision are *not* independent. The difference in promotion rates of 29.2% was not due to natural variability, and equally qualified female personnel are less likely to be promoted than male personnel.
+
+
+## Function to simulate under the null (use to perform test)
+
+I have written the following function to perform a simple permutation test for our data. This is the equivalent of what we did in class with paper and cups. You are not expected to reproduce functions like this, but it is cool that you can also write your own functions in R at some point if you want/need to! Note: df stands for data frame (like sex_discrimination) and Nsim stands for the number of simulations under the null, or permutations, we are going to consider. In class we had 23 when we did it by hand.
+
+```{r}
+perm.test <- function(df, Nsim){
+  perm_prop_diff <- numeric(Nsim)
+  for (i in 1:Nsim){
+    df$shuffled_sex <- sample(df$sex, replace = FALSE)
+    perm_prop_diff[i] <- mean(df[df$shuffled_sex == "male",]$decision == "promoted") - mean(df[df$shuffled_sex == "female",]$decision == "promoted")
+  }
+  return(data.frame(perm_prop_diff))
+}
+```
+
+## Performing simulations for test and saving results
+
+Let's run through an example of how to use this function.
+
+```{r}
+## Nsim = 20
+
+perm.test(sex_discrimination, Nsim = 20)
+
+```
+
+There are a couple of points to be made here. One, what happens if you run the code above again? Pay attention to the first few numbers. **Are they the same or different? Why?**
+
+
+
+
+Two, we have a data frame with one column of length 20. It will be easier for us to save this as something. Recall we briefly discussed that we can do object assignment in R. It looks like this.
+
+```{r}
+## Ensure we get the same results every time by setting a seed:
+set.seed(1245)
+
+## Nsim = 20
+perm_Nsim20 <- perm.test(sex_discrimination, Nsim = 20)
+```
+
+Now, make a histogram of your results using ggplot().
+
+```{r}
+
+```
+
+We can calculate a p-value -- the probability of observing a difference in proportion as extreme or more extreme than what we got in our data assuming the null hypothesis is true. To do this, we need the observed difference from our data and we need to calculate how many of our observations are at least as big as that (0.291) in absolute value.
+
+```{r}
+obs_prop_diff <- mean(sex_discrimination[sex_discrimination$sex == "male",]$decision == "promoted") - mean(sex_discrimination[sex_discrimination$sex == "female",]$decision == "promoted")
+
+p_val_Nsim20 <- mean(abs(perm_Nsim20$perm_prop_diff) >= obs_prop_diff)
+p_val_Nsim20
+```
+
+
+Now repeat this for Nsim = 50 and 100, producing the simulation and the associated histogram for each.
+
+```{r}
+## Nsim = 50
+```
+
+```{r}
+## Nsim = 100
+```
+
+
+**What do you observe? Which result do you trust more? Why?**
+
+
+
+**Is there statistically discernable evidence against the null (at say, 0.05)? In other words, is your calculated p-value less than 0.05?**
+
+
